@@ -221,30 +221,27 @@ class MTurkManager():
         results = {}
         while True:
             with self.worker_pool_change_condition:
-                while True:
-                    self.worker_candidates = []
-                    for worker in self.worker_pool:
-                        if not worker.hit_is_returned:
-                            if eligibility_function(worker): # Decides whether this worker can be in a conversation
-                                self.worker_candidates.append(worker)
-                                if len(self.worker_candidates) == len(self.mturk_agent_ids):
-                                    break
-                    if len(self.worker_candidates) == len(self.mturk_agent_ids): # Spawn a TaskWorld and put these workers in a new conversation
-                        self.conversation_index += 1
-                        new_conversation_id = 't_' + str(self.conversation_index)
-                        for worker in self.worker_candidates:
-                            self.worker_pool.remove(worker)
-                            worker_agent_id = role_function(worker)
-                            worker.change_conversation(conversation_id=new_conversation_id, agent_id=worker_agent_id)
-                            
-                        self.worker_candidates.sort(key=lambda x: self.mturk_agent_ids.index(x.id))
+                self.worker_candidates = []
+                for worker in self.worker_pool:
+                    if not worker.hit_is_returned:
+                        if eligibility_function(worker): # Decides whether this worker can be in a conversation
+                            self.worker_candidates.append(worker)
+                            if len(self.worker_candidates) == len(self.mturk_agent_ids):
+                                break
+                if len(self.worker_candidates) == len(self.mturk_agent_ids): # Spawn a TaskWorld and put these workers in a new conversation
+                    self.conversation_index += 1
+                    new_conversation_id = 't_' + str(self.conversation_index)
+                    for worker in self.worker_candidates:
+                        self.worker_pool.remove(worker)
+                        worker_agent_id = role_function(worker)
+                        worker.change_conversation(conversation_id=new_conversation_id, agent_id=worker_agent_id)
+                        
+                    self.worker_candidates.sort(key=lambda x: self.mturk_agent_ids.index(x.id))
 
-                        task_thread = threading.Thread(target=_task_function, args=(self.opt, self.worker_candidates, self.conversation_index, results))
-                        task_thread.daemon = True
-                        task_thread.start()
-                        self.task_threads.append(task_thread)
-                    else:
-                        break
+                    task_thread = threading.Thread(target=_task_function, args=(self.opt, self.worker_candidates, self.conversation_index, results))
+                    task_thread.daemon = True
+                    task_thread.start()
+                    self.task_threads.append(task_thread)
 
                         # if self.conversation_index == self.opt['num_conversations']:
                         #     self.expire_all_unassigned_hits()
