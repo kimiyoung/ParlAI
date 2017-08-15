@@ -693,7 +693,7 @@ class MTurkManager():
         client = get_mturk_client(self.is_sandbox)
         client.send_bonus(
             WorkerId=worker_id,
-            BonusAmount=bonus_amount,
+            BonusAmount=str(bonus_amount),
             AssignmentId=assignment_id,
             Reason=reason,
             UniqueRequestToken=unique_request_token # Could be useful in the future, for handling network errors
