@@ -61,9 +61,9 @@ app.get('/chat_index', async function (req, res) {
     template_context['is_cover_page'] = true;
     res.render('cover_page.html', template_context);
   }
-  else if ((!changing_conversation) && _load_hit_config()['unique_worker'] === true && await data_model.worker_record_exists(task_group_id, worker_id)) {
-    res.send("Sorry, but you can only work on this HIT once.");
-  }
+  // else if ((!changing_conversation) && _load_hit_config()['unique_worker'] === true && await data_model.worker_record_exists(task_group_id, worker_id)) {
+  //   res.send("Sorry, but you can only work on this HIT once.");
+  // }
   else {
     await data_model.add_worker_record(task_group_id, hit_id, assignment_id, worker_id);
 
