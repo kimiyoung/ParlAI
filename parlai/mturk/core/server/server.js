@@ -51,13 +51,13 @@ app.get('/chat_index', async function (req, res) {
   var hit_id = params['hitId'];
   var changing_conversation = params['changing_conversation'] || false;
 
-  if ((!changing_conversation) && (await data_model.hit_record_count(task_group_id, hit_id)) == _load_hit_config()['num_assignments']) {
-    res.send('Sorry, there is no HIT available in this group right now.')
-  }
-  // else if ((await data_model.assignment_record_exists(task_group_id, assignment_id)) && !(await data_model.assignment_worker_record_exists(task_group_id, assignment_id, worker_id))) { // This HIT is already returned by another worker
-  //   res.send('Sorry, this HIT has been worked on by someone else before and will be expired soon. If there is "Skip HIT" button, please click on it to find out if the next HIT is available.');
+  // if ((!changing_conversation) && (await data_model.hit_record_count(task_group_id, hit_id)) == _load_hit_config()['num_assignments']) {
+  //   res.send('Sorry, there is no HIT available in this group right now.')
   // }
-  else if (assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE') {
+  // // else if ((await data_model.assignment_record_exists(task_group_id, assignment_id)) && !(await data_model.assignment_worker_record_exists(task_group_id, assignment_id, worker_id))) { // This HIT is already returned by another worker
+  // //   res.send('Sorry, this HIT has been worked on by someone else before and will be expired soon. If there is "Skip HIT" button, please click on it to find out if the next HIT is available.');
+  // // }
+  if (assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE') {
     template_context['is_cover_page'] = true;
     res.render('cover_page.html', template_context);
   }

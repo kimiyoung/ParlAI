@@ -213,7 +213,7 @@ class MTurkManager():
             onboard_thread.start()
             self.worker_global_id_to_onboard_thread[self.get_worker_global_id(mturk_agent.assignment_id, mturk_agent.worker_id)] = onboard_thread
 
-    def start_task(self, eligibility_function, role_function, task_function):
+    def start_task(self, eligibility_function, role_function, task_function, timeout=60):
         def _task_function(opt, workers, conversation_index, results):
             print("Starting task...")
             results[conversation_index] = task_function(opt=opt, workers=workers)
@@ -243,18 +243,28 @@ class MTurkManager():
                     task_thread.start()
                     self.task_threads.append(task_thread)
 
-                    if self.conversation_index == self.opt['num_conversations']:
-                        self.expire_all_unassigned_hits()
+                    # if self.conversation_index == self.opt['num_conversations']:
+                    #     self.expire_all_unassigned_hits()
 
-                        # Wait for all conversations to finish, then break from the while loop
-                        for thread in self.task_threads:
-                            thread.join() 
-                        result_list = []
-                        for i in range(self.opt['num_conversations']):
-                            result = results[i+1]
-                            result_list.append(result)
-                        return result_list
-                self.worker_pool_change_condition.wait()
+                    #     # Wait for all conversations to finish, then break from the while loop
+                    #     for thread in self.task_threads:
+                    #         thread.join() 
+                    #     result_list = []
+                    #     for i in range(self.opt['num_conversations']):
+                    #         result = results[i+1]
+                    #         result_list.append(result)
+                    #     return result_list
+                if not self.worker_pool_change_condition.wait(timeout=timeout):
+                    self.expire_all_unassigned_hits()
+                    for thread in self.task_threads:
+                        thread.join()
+                    result_list = []
+                    i = 0
+                    while i + 1 in results:
+                        result_list.append(results[i + 1])
+                        i += 1
+                    return result_list
+
 
     def _send_event_to_socket(self, event_name, event_data, callback=None):
         # event_sent = threading.Event()

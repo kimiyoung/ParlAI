@@ -47,7 +47,7 @@ def main():
 
     mturk_manager.set_onboard_function(onboard_function=None)
 
-    while True:
+    for _ in range(2):
         try:
             mturk_manager.start_new_run()
             mturk_manager.create_hits()
@@ -73,7 +73,8 @@ def main():
             mturk_manager.start_task(
                 eligibility_function=check_worker_eligibility,
                 role_function=get_worker_role,
-                task_function=run_conversation
+                task_function=run_conversation,
+                timeout=5 * 60
             )
         except:
             raise

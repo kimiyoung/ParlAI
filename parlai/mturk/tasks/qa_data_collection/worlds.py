@@ -64,7 +64,7 @@ class QADataCollectionWorld(MTurkTaskWorld):
 
         #     self.episodeDone = True
 
-        for i in range(2):
+        for i in range(50):
             ad['text'] = 'Say something ' + str(i)
             self.mturk_agent.observe(validate(ad))
             self.response = self.mturk_agent.act(timeout=60)
