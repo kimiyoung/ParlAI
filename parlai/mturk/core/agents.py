@@ -36,7 +36,7 @@ RETURN_MESSAGE = '[RETURNED]' # the Turker returned the HIT
 
 logging_enabled = True
 logger = None
-debug = False
+debug = True
 
 if logging_enabled:
     logging.basicConfig(filename=str(time.time())+'.log',
@@ -221,39 +221,42 @@ class MTurkManager():
         results = {}
         while True:
             with self.worker_pool_change_condition:
-                self.worker_candidates = []
-                for worker in self.worker_pool:
-                    if not worker.hit_is_returned:
-                        if eligibility_function(worker): # Decides whether this worker can be in a conversation
-                            self.worker_candidates.append(worker)
-                            if len(self.worker_candidates) == len(self.mturk_agent_ids):
-                                break
-                if len(self.worker_candidates) == len(self.mturk_agent_ids): # Spawn a TaskWorld and put these workers in a new conversation
-                    self.conversation_index += 1
-                    new_conversation_id = 't_' + str(self.conversation_index)
-                    for worker in self.worker_candidates:
-                        self.worker_pool.remove(worker)
-                        worker_agent_id = role_function(worker)
-                        worker.change_conversation(conversation_id=new_conversation_id, agent_id=worker_agent_id)
-                        
-                    self.worker_candidates.sort(key=lambda x: self.mturk_agent_ids.index(x.id))
+                while True:
+                    self.worker_candidates = []
+                    for worker in self.worker_pool:
+                        if not worker.hit_is_returned:
+                            if eligibility_function(worker): # Decides whether this worker can be in a conversation
+                                self.worker_candidates.append(worker)
+                                if len(self.worker_candidates) == len(self.mturk_agent_ids):
+                                    break
+                    if len(self.worker_candidates) == len(self.mturk_agent_ids): # Spawn a TaskWorld and put these workers in a new conversation
+                        self.conversation_index += 1
+                        new_conversation_id = 't_' + str(self.conversation_index)
+                        for worker in self.worker_candidates:
+                            self.worker_pool.remove(worker)
+                            worker_agent_id = role_function(worker)
+                            worker.change_conversation(conversation_id=new_conversation_id, agent_id=worker_agent_id)
+                            
+                        self.worker_candidates.sort(key=lambda x: self.mturk_agent_ids.index(x.id))
 
-                    task_thread = threading.Thread(target=_task_function, args=(self.opt, self.worker_candidates, self.conversation_index, results))
-                    task_thread.daemon = True
-                    task_thread.start()
-                    self.task_threads.append(task_thread)
+                        task_thread = threading.Thread(target=_task_function, args=(self.opt, self.worker_candidates, self.conversation_index, results))
+                        task_thread.daemon = True
+                        task_thread.start()
+                        self.task_threads.append(task_thread)
+                    else:
+                        break
 
-                    # if self.conversation_index == self.opt['num_conversations']:
-                    #     self.expire_all_unassigned_hits()
+                        # if self.conversation_index == self.opt['num_conversations']:
+                        #     self.expire_all_unassigned_hits()
 
-                    #     # Wait for all conversations to finish, then break from the while loop
-                    #     for thread in self.task_threads:
-                    #         thread.join() 
-                    #     result_list = []
-                    #     for i in range(self.opt['num_conversations']):
-                    #         result = results[i+1]
-                    #         result_list.append(result)
-                    #     return result_list
+                        #     # Wait for all conversations to finish, then break from the while loop
+                        #     for thread in self.task_threads:
+                        #         thread.join() 
+                        #     result_list = []
+                        #     for i in range(self.opt['num_conversations']):
+                        #         result = results[i+1]
+                        #         result_list.append(result)
+                        #     return result_list
                 if not self.worker_pool_change_condition.wait(timeout=timeout):
                     self.expire_all_unassigned_hits()
                     for thread in self.task_threads:
