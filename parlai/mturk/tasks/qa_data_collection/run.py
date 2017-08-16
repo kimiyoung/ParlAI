@@ -39,45 +39,47 @@ def main():
     )
     mturk_manager.setup_server()
 
-    try:
-        mturk_manager.start_new_run()
-        mturk_manager.create_hits()
+    def run_onboard(worker):
+        world = QADataCollectionOnboardWorld(opt=opt, mturk_agent=worker)
+        while not world.episode_done():
+            world.parley()
+        world.shutdown()
 
-        def run_onboard(worker):
-            world = QADataCollectionOnboardWorld(opt=opt, mturk_agent=worker)
-            while not world.episode_done():
-                world.parley()
-            world.shutdown()
+    mturk_manager.set_onboard_function(onboard_function=None)
 
-        mturk_manager.set_onboard_function(onboard_function=run_onboard)
-        mturk_manager.ready_to_accept_workers()
+    while True:
+        try:
+            mturk_manager.start_new_run()
+            mturk_manager.create_hits()
 
-        def check_worker_eligibility(worker):
-            return True
+            mturk_manager.ready_to_accept_workers()
 
-        def get_worker_role(worker):
-            return mturk_agent_id
+            def check_worker_eligibility(worker):
+                return True
 
-        global run_conversation
-        def run_conversation(opt, workers):
-            task = task_class(task_opt)
-            mturk_agent = workers[0]
-            world = QADataCollectionWorld(opt=opt, task=task, mturk_agent=mturk_agent)
-            while not world.episode_done():
-                world.parley()
-            world.shutdown()
-            world.review_work()
+            def get_worker_role(worker):
+                return mturk_agent_id
 
-        mturk_manager.start_task(
-            eligibility_function=check_worker_eligibility,
-            role_function=get_worker_role,
-            task_function=run_conversation
-        )
-    except:
-        raise
-    finally:
-        mturk_manager.expire_all_unassigned_hits()
-        mturk_manager.shutdown()
+            global run_conversation
+            def run_conversation(mturk_manager, opt, workers):
+                task = task_class(task_opt)
+                mturk_agent = workers[0]
+                world = QADataCollectionWorld(opt=opt, task=task, mturk_agent=mturk_agent)
+                while not world.episode_done():
+                    world.parley()
+                world.shutdown()
+                world.review_work()
+
+            mturk_manager.start_task(
+                eligibility_function=check_worker_eligibility,
+                role_function=get_worker_role,
+                task_function=run_conversation
+            )
+        except:
+            raise
+        finally:
+            mturk_manager.expire_all_unassigned_hits()
+            mturk_manager.shutdown()
 
 if __name__ == '__main__':
     main()

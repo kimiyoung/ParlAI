@@ -218,6 +218,9 @@
 ;            $("div#waiting-for-message").css("display", "none");
         } else if (command === 'COMMAND_SUBMIT_HIT') {
             all_done_callback();
+        } else if (command === 'COMMAND_EXPIRE_HIT') {
+            hit_is_expired = true;
+            update_UI_for_response_type('expired');
         } else if (command === 'COMMAND_CHANGE_CONVERSATION') {
             console.log('current conversation_id: ' + conversation_id);
             var new_conversation_id = msg['conversation_id'];
