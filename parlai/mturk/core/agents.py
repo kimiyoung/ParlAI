@@ -89,7 +89,7 @@ class SocketManager():
     """SocketManager is a wrapper around socketIO to stabilize its message passing.
     The manager handles resending messages. """
 
-    def __init__(self, server_url, port, alive_callback, message_callback, socket_dead_callback, socket_dead_timeout=4):
+    def __init__(self, server_url, port, alive_callback, message_callback, socket_dead_callback, socket_dead_timeout=40000):
         self.server_url = server_url
         self.port = port
         self.alive_callback = alive_callback
@@ -443,7 +443,7 @@ class MTurkManager():
         conversation_id = msg['data']['conversation_id']
 
         # if some remote sockets are not disconnected in previous runs
-        if conversation_id and assignment_id + worker_id not in self.assignment_worker_state:
+        if hit_id not in self.hit_id_list:
             print_and_log("Agent (" + worker_id + ") with invalid status tried to join", False)
             return
 
