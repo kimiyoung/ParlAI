@@ -219,6 +219,7 @@
         } else if (command === 'COMMAND_SUBMIT_HIT') {
             all_done_callback();
         } else if (command === 'COMMAND_EXPIRE_HIT') {
+            socket.close();
             hit_is_expired = true;
             update_UI_for_response_type('expired');
         } else if (command === 'COMMAND_CHANGE_CONVERSATION') {
@@ -363,7 +364,7 @@
 
         var msg = {id: id,
                    type: type,
-                   sender_id: assignment_id,
+                   sender_id: assignment_id + worker_id,
                    receiver_id: '[World]',
                    data: data,
                    status: STATUS_INIT,
@@ -434,7 +435,7 @@
     function _heartbeat_thread() {
         var hb = {'id': uuidv4(),
                   'receiver_id': '[World]',
-                  'sender_id': assignment_id,
+                  'sender_id': assignment_id + worker_id,
                   'type': TYPE_HEARTBEAT,
                   'data': null}
         socket.emit('route message', hb);
