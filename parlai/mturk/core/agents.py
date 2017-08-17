@@ -289,6 +289,7 @@ class MTurkManager():
         self.conversation_index = 0
         self.assignment_worker_state = {}
         self.socket_manager = None
+        self.accept_worker = False
 
 
     def setup_server(self, task_directory_path=None):
@@ -334,6 +335,7 @@ class MTurkManager():
 
     def ready_to_accept_workers(self):
         print_and_log('Local: Setting up SocketIO...')
+        self.accept_worker = True
         self.setup_socket()
 
     def start_new_run(self):
@@ -448,6 +450,10 @@ class MTurkManager():
         hit_id = msg['data']['hit_id']
         assignment_id = msg['data']['assignment_id']
         conversation_id = msg['data']['conversation_id']
+
+        if not self.accept_worker:
+            print_and_log("Not ready to accept worker", False)
+            return
 
         # if some remote sockets are not disconnected in previous runs
         if hit_id not in self.hit_id_list:
@@ -636,6 +642,7 @@ class MTurkManager():
     def shutdown(self):
         setup_aws_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'server_utils.py')
         print_and_log("Remote database instance will accumulate cost over time (about $30/month for t2.medium instance). Please run `python "+setup_aws_file_path+" remove_rds` to remove RDS instance if you don't plan to use MTurk often.")
+        self.accept_worker = False
         self.socket_manager.close_all_channels()
 
 class MTurkAgent(Agent):
