@@ -89,7 +89,7 @@ class SocketManager():
     """SocketManager is a wrapper around socketIO to stabilize its message passing.
     The manager handles resending messages. """
 
-    def __init__(self, server_url, port, alive_callback, message_callback, socket_dead_callback, socket_dead_timeout=40000):
+    def __init__(self, server_url, port, alive_callback, message_callback, socket_dead_callback, socket_dead_timeout=60):
         self.server_url = server_url
         self.port = port
         self.alive_callback = alive_callback
@@ -166,8 +166,15 @@ class SocketManager():
         self.run[id] = True
 
         def channel_thread():
+            NUM_WAIT_ITERS = int(60 * 0.2)
             while self.run[id]:
                 try:
+                    for i in range(NUM_WAIT_ITERS):
+                        if i == NUM_WAIT_ITERS - 1:
+                            self.socket_dead_callback(id)
+                            return
+                        if id in self.last_heartbeat: break
+                        time.sleep(0.2)
                     if time.time() - self.last_heartbeat[id] > self.socket_dead_timeout:
                         self.socket_dead_callback(id)
                         break
@@ -406,7 +413,7 @@ class MTurkManager():
                             selected_workers.append(worker)
                             worker.id = role_function(worker)
                             worker.change_conversation(conversation_id=new_conversation_id, agent_id=worker.id)
-                    self.worker_pool = []
+                            self.worker_pool.remove(worker)
 
                     task_thread = threading.Thread(target=_task_function, args=(self.opt, selected_workers, new_conversation_id, self.conversation_index, results))
                     task_thread.daemon = True
