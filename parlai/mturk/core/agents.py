@@ -426,7 +426,7 @@ class MTurkManager():
 
             time.sleep(0.1)
             if time.time() - wait_start_time > timeout:
-                
+                self.accept_worker = False
                 self.expire_all_unassigned_hits()
 
                 for thread in self.task_threads:
@@ -463,7 +463,7 @@ class MTurkManager():
         self.socket_manager.open_channel(assignment_id + worker_id)
 
         if not conversation_id:
-            if self.can_send(assignment_id + worker_id) or assignment_id + worker_id in self.assignment_worker_state:
+            if assignment_id + worker_id in self.assignment_worker_state:
                 print_and_log("Agent (" + worker_id + ") has been added before", False)
                 return
             self.assignment_worker_state[assignment_id + worker_id] = {'conversation_id': None,
