@@ -463,6 +463,9 @@ class MTurkManager():
         self.socket_manager.open_channel(assignment_id + worker_id)
 
         if not conversation_id:
+            if self.can_send(assignment_id + worker_id) or assignment_id + worker_id in self.assignment_worker_state:
+                print_and_log("Agent (" + worker_id + ") has been added before", False)
+                return
             self.assignment_worker_state[assignment_id + worker_id] = {'conversation_id': None,
                                              'status': 'init'}
             self.create_agent(hit_id, assignment_id, worker_id)
