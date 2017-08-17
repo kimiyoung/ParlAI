@@ -166,7 +166,7 @@ class SocketManager():
         self.run[id] = True
 
         def channel_thread():
-            NUM_WAIT_ITERS = int(60 * 0.2)
+            NUM_WAIT_ITERS = int(60 / 0.2)
             while self.run[id]:
                 try:
                     for i in range(NUM_WAIT_ITERS):
