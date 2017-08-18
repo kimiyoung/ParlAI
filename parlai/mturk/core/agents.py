@@ -71,6 +71,35 @@ def print_and_log(message, should_print=True):
     if should_print or debug: # Always print message in debug mode
         print(message)
 
+def email_worker(opt, worker_id, subject, message_text):
+    client = get_mturk_client(opt['is_sandbox'])
+    response = client.notify_workers(
+        Subject=subject,
+        MessageText=message_text,
+        WorkerIds=[worker_id]
+    )
+    if len(response['NotifyWorkersFailureStatuses']) > 0:
+        return False
+    else:
+        return True
+
+def pay_bonus(opt, worker_id, bonus_amount, assignment_id, reason):
+    unique_request_token=str(uuid.uuid4())
+    total_cost = calculate_mturk_cost(payment_opt={'type': 'bonus', 'amount': bonus_amount})
+    if not check_mturk_balance(balance_needed=total_cost, is_sandbox=opt['is_sandbox']):
+        print_and_log("Cannot pay bonus. Reason: Insufficient fund in your MTurk account.")
+        return False
+
+    client = get_mturk_client(opt['is_sandbox'])
+    client.send_bonus(
+        WorkerId=worker_id,
+        BonusAmount=str(bonus_amount),
+        AssignmentId=assignment_id,
+        Reason=reason,
+        UniqueRequestToken=unique_request_token # Could be useful in the future, for handling network errors
+    )
+
+    return True
 
 class Message():
     def __init__(self, id, type, sender_id, receiver_id, data, requires_ack=True, blocking=True):
@@ -666,34 +695,19 @@ class MTurkAgent(Agent):
 
         self.msg_queue = Queue()
 
-        # self.check_hit_status_thread = threading.Thread(target=self._check_hit_status)
-        # self.check_hit_status_thread.daemon = True
-        # self.check_hit_status_thread.start()
-
-    def _check_hit_status(self):
-        # Check if HIT is returned
-        while True:
-            if self.hit_id:
-                response = self.manager.get_hit(hit_id=self.hit_id)
-                if response['HIT']['NumberOfAssignmentsPending'] == 1: # Amazon MTurk system acknowledges that the HIT is accepted
-                    print_and_log('Worker has accepted the HIT (acknowledged by MTurk API).', False)
-                    self.hit_is_accepted = True
-                    break
-            time.sleep(5) # ThrottlingException might happen if we poll too frequently
-        while True:
-            if self.hit_id:
-                response = self.manager.get_hit(hit_id=self.hit_id)
-                if response['HIT']['NumberOfAssignmentsAvailable'] == 1: # HIT is returned
-                    self.hit_is_returned = True
-                    # If the worker is still in onboarding, then we don't need to expire the HIT. 
-                    # If the worker is already in a conversation, then we should expire the HIT to keep the total number of available HITs consistent with the number of conversations left.
-                    if self.is_in_task():
-                        print_and_log('Worker has returned the HIT. Since the worker is already in a task conversation, we are expiring the HIT.', False)
-                        self.manager.expire_hit(hit_id=self.hit_id)
-                    else:
-                        print_and_log('Worker has returned the HIT. Since the worker is still in onboarding, we will not expire the HIT.', False)
-                    return # we will not be using this MTurkAgent object for other worker, so no need to check its status anymore
-            time.sleep(5) # ThrottlingException might happen if we poll too frequently
+    def get_sanitized_copy(self):
+        ret = {
+            'conversation_id': self.conversation_id,
+            'socket_id': self.socket_id,
+            'id': self.id,
+            'assignment_id': self.assignment_id,
+            'hit_id': self.hit_id,
+            'worker_id': self.worker_id,
+            'hit_is_abandoned': self.hit_is_abandoned
+        }
+        if hasattr(self, 'username'):
+            ret['username'] = self.username
+        return ret
 
     def is_in_task(self):
         if self.conversation_id:
