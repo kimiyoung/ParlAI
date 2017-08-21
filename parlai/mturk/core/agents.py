@@ -475,10 +475,15 @@ class MTurkManager():
 
     def on_alive(self, msg):
         print_and_log("on_agent_alive: " + str(msg), False)
-        worker_id = msg['data']['worker_id']
-        hit_id = msg['data']['hit_id']
-        assignment_id = msg['data']['assignment_id']
-        conversation_id = msg['data']['conversation_id']
+
+        try:
+            worker_id = msg['data']['worker_id']
+            hit_id = msg['data']['hit_id']
+            assignment_id = msg['data']['assignment_id']
+            conversation_id = msg['data']['conversation_id']
+        except:
+            print_and_log('Invalid input messages', False)
+            return
 
         if not self.accept_worker:
             print_and_log("Not ready to accept worker", False)
