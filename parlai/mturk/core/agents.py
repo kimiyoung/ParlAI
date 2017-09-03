@@ -50,6 +50,7 @@ ASSIGNMENT_REJECTED = 'Rejected'
 MTURK_DISCONNECT_MESSAGE = '[DISCONNECT]' # some Turker disconnected from conversation
 TIMEOUT_MESSAGE = '[TIMEOUT]' # the Turker did not respond, but didn't return the HIT
 RETURN_MESSAGE = '[RETURNED]' # the Turker returned the HIT
+SUBMIT_TIMEOUT_MESSAGE = '[SUBMIT_TIMEOUT]' # the Turker did not respond, but it is ready to submit
 
 INVALID_TASK_RETURN = '[INVALID]'
 
@@ -722,7 +723,7 @@ class MTurkAgent(Agent):
     def observe(self, msg):
         self.manager.send_message('[World]', self.assignment_id + self.worker_id, msg)
 
-    def act(self, timeout=None): # Timeout in seconds, after which the HIT will be expired automatically
+    def act(self, timeout=None, submit_timeout=None): # Timeout in seconds, after which the HIT will be expired automatically
         self.manager.send_command('[World]', self.assignment_id + self.worker_id, {'text': 'COMMAND_SEND_MESSAGE'})
 
         if timeout:
@@ -751,6 +752,12 @@ class MTurkAgent(Agent):
                     'episode_done': True
                 }
                 return msg
+
+            # Check if the Turker waited too long, but was ready to submit
+            if submit_timeout:
+                if time.time() - start_time > submit_timeout:
+                    print_and_log('{} is timeout (to be submitted).'.format(self.id), False)
+                    return {'id': self.id, 'text': SUBMIT_TIMEOUT_MESSAGE, 'episode_done': True}
 
             # Check if the Turker waited too long to respond
             if timeout:
